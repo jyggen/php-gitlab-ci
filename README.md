@@ -36,5 +36,5 @@ The following versions are currently available:
 
 ### Caveats
 
-- `7.0` and earlier, as well as `8.0-dev`, does not come with `pcov` installed.
+- `7.0` and earlier, as well as `7.4-dev` and `8.0-dev`, does not come with `pcov` installed.
 - `7.2` and later does not come with `mcrypt` installed.

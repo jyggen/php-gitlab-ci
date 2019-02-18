@@ -46,6 +46,13 @@ for version in "${!images[@]}"; do
 	majorVersion="${version%%.*}"
 	minorVersion="${version#$majorVersion.}"
 	minorVersion="${minorVersion%-dev}"
+	devVersion="${version#$majorVersion.$minorVersion-}"
+
+	if [ $devVersion == 'dev' ]; then
+		devVersion=1
+	else
+		devVersion=0
+	fi
 
 	echo "Generating php/$version/Dockerfile from $baseDockerfile"
 
@@ -64,8 +71,11 @@ for version in "${!images[@]}"; do
 			"php/$version/Dockerfile"
 	fi
 
-	# pcov only supports 7.1 and later, and PEAR/PECL is (currently) non-functioning on 8.0-dev.
-	if [ "$majorVersion" -lt '7' ] || [ "$majorVersion" -gt '7' ] || [ "$majorVersion" = '7' -a "$minorVersion" -lt '1' ]; then
+	# pcov only supports 7.1 and later, and PECL is (currently?) not available on 7.4-dev and 8.0-dev.
+	if [ "$majorVersion" -lt '7' ] ||
+		[ "$majorVersion" -gt '7' ] ||
+		[ "$majorVersion" = '7' -a "$minorVersion" -lt '1' ] ||
+		[ "$majorVersion" = '7' -a "$minorVersion" = '4' -a "$devVersion" -eq 1 ] ; then
 		$sedCmd -ri \
 			-e '/&& apk add --no-cache --virtual .build-deps/d' \
 			-e '/&& pecl install pcov-1.0.0/d' \
