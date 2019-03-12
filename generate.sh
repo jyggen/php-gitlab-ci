@@ -64,23 +64,28 @@ for version in "${!images[@]}"; do
 		-e 's!%%PHP_VERSION%%!'"$version"'!' \
 		"php/$version/Dockerfile"
 
-	# the alpine version 5.3 is running does not have libzip-dev.
+	# The version of Alpine PHP 5.5 is running does not have libzip-dev.
 	if [ "$majorVersion" = '5' -a "$minorVersion" -lt '6' ]; then
 		$sedCmd -ri \
 			-e 's/ libzip-dev//g' \
 			"php/$version/Dockerfile"
 	fi
 
-	# pcov only supports 7.1 and later, and PECL is (currently?) not available on 7.4-dev and 8.0-dev.
+	# For PHP 5.x we need to use APCU 4.x.
+	if [ "$majorVersion" = '5' ] ; then
+		$sedCmd -ri \
+			-e 's/5.1.17/4.0.11/g' \
+			"php/$version/Dockerfile"
+	fi
+
+	# pcov only supports 7.1 and later.
 	if [ "$majorVersion" -lt '7' ] ||
 		[ "$majorVersion" -gt '7' ] ||
 		[ "$majorVersion" = '7' -a "$minorVersion" -lt '1' ] ||
 		[ "$majorVersion" = '7' -a "$minorVersion" = '4' -a "$devVersion" -eq 1 ] ; then
 		$sedCmd -ri \
-			-e '/&& apk add --no-cache --virtual .build-deps/d' \
 			-e '/&& pecl install pcov-1.0.0/d' \
-			-e '/&& apk del .build-deps/d' \
-			-e '/&& docker-php-ext-enable pcov/d' \
+			-e 's/ pcov//g' \
 			"php/$version/Dockerfile"
 	fi
 
@@ -89,6 +94,16 @@ for version in "${!images[@]}"; do
 		$sedCmd -ri \
 			-e 's/ libmcrypt-dev//g' \
 			-e 's/ mcrypt//g' \
+			"php/$version/Dockerfile"
+	fi
+
+	# PECL is (currently?) unavailable on 7.4-dev and 8.0-dev.
+	if [ "$majorVersion" -gt '7' ] || [ "$majorVersion" = '7' -a "$minorVersion" -gt '3' ]; then
+		$sedCmd -ri \
+			-e '/&& apk add --no-cache --virtual .build-deps/d' \
+			-e '/&& pecl install/d' \
+			-e '/&& apk del .build-deps/d' \
+			-e '/&& docker-php-ext-enable apcu/d' \
 			"php/$version/Dockerfile"
 	fi
 done
